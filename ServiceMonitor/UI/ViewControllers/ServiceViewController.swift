@@ -13,6 +13,7 @@ class ServiceViewController: MonitorObjectViewController {
     
     var typePicker: UIPickerView!
     var updateObserverToken: Any?
+    var refreshControl: UIRefreshControl!
    
     @IBOutlet weak var statusLabel: UILabel!
     @IBOutlet weak var idLabel: UILabel!
@@ -25,6 +26,7 @@ class ServiceViewController: MonitorObjectViewController {
     @IBOutlet weak var typeTextField: UITextField!
     @IBOutlet weak var notificationSwitch: UISwitch!
     @IBOutlet weak var lastExecutionTimeLabel: UILabel!
+    @IBOutlet weak var scrollView: UIScrollView!
     
     
     override func viewDidLoad() {
@@ -42,6 +44,8 @@ class ServiceViewController: MonitorObjectViewController {
         setViewData()
         subscribeToKeyboardNotifications()
         dataManager.object = object
+        setRefreshControl()
+        
         updateObserverToken = NotificationCenter.default.addObserver(self, selector: #selector(onServiceUpdate(_:)), name: .didUpdateService , object: nil)
     }
     
@@ -51,6 +55,29 @@ class ServiceViewController: MonitorObjectViewController {
             NotificationCenter.default.removeObserver(token)
         }
     }
+    
+    func setRefreshControl() {
+        self.refreshControl = UIRefreshControl()
+        self.scrollView.alwaysBounceVertical = true
+        self.refreshControl.tintColor = UIColor.gray
+        self.refreshControl.addTarget(self, action: #selector(loadData), for: .valueChanged)
+        self.scrollView.addSubview(refreshControl)
+    }
+    
+    @objc func loadData() {
+        guard self.saveButton.isHidden else {
+            refreshControl.endRefreshing()
+            return
+        }
+        
+        guard let object = object as? Service else {
+            refreshControl.endRefreshing()
+            return
+        }
+
+        dataManager.updateServiceData(id: Int(object.monitorId))
+
+     }
     
     @IBAction func deleteButtonTapped(_ sender: Any) {
         let alertVC = UIAlertController(title: "Warning!", message: "Group will be deleted! Are you shure?", preferredStyle: .alert)
@@ -212,6 +239,9 @@ class ServiceViewController: MonitorObjectViewController {
     }
     
     @objc func onServiceUpdate(_ notification: Notification) {
+        if refreshControl.isRefreshing {
+            refreshControl.endRefreshing()
+        }
         setStatusData()
     }
     
@@ -223,10 +253,18 @@ class ServiceViewController: MonitorObjectViewController {
     
     @objc func keyboardWillShow(_ notification: Notification) {
         let responderView = view.currentFirstResponder() as! UIView
-        
-        if view.frame.maxY - responderView.frame.maxY < typePicker.frame.height {
-            view.frame.origin.y = -typePicker.frame.height
+        let height: CGFloat = getKeyboardHeight(notification)
+ 
+
+        if view.frame.maxY - responderView.frame.maxY < height {
+            view.frame.origin.y = -height
         }
+    }
+    
+    func getKeyboardHeight(_ notification: Notification) -> CGFloat {
+        let userInfo = notification.userInfo
+        let keyboardSize = userInfo![UIResponder.keyboardFrameEndUserInfoKey] as! NSValue
+        return keyboardSize.cgRectValue.height
     }
     
     @objc func keyboardWillDisappear(_ notification: Notification) {
