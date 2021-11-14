@@ -1,6 +1,7 @@
 
 import Foundation
 
+// Class containt all serverexchange operations.
 class ServiceClient {
     // MARK: URL tasks
     class func dataTask(url: URL, completion: @escaping(Data?, String?) -> Void) {
@@ -99,13 +100,6 @@ class ServiceClient {
         }
     }
     
-    private func handleMonitorData<dataType: Decodable>(data: dataType?, error: String?, completion:@escaping(dataType?, String?)-> Void) {
-        guard let data = data else {
-            completion(nil, error)
-            return
-        }
-        completion(data, nil)
-    }
     
     // MARK: CRUD operations
     class func addToMonitor<serviceObject: Codable>(serviceObject: serviceObject, url: URL, completion: @escaping(Int?, String?) -> Void) {
@@ -159,7 +153,7 @@ class ServiceClient {
 }
 
 enum Endpoints {
-    static let base = "https://bonus.1hmm.ru/MonitorWebService-0.1/rest/methods/"
+    static let base = "https://bonus.1hmm.ru/MonitorService/rest/methods/"
     
     case getMonitorStatus
     case addGroup

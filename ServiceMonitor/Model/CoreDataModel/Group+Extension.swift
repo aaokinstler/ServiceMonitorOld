@@ -8,8 +8,8 @@ import CoreData
 
 extension Group {
     
+    // Get core data instance
     class func instance(id: Int, context: NSManagedObjectContext) -> Group? {
-        
         let request:NSFetchRequest<Group> = Group.fetchRequest()
         let predicate = NSPredicate(format: "monitorId == %ld", id)
         request.predicate = predicate
@@ -23,6 +23,7 @@ extension Group {
         }
     }
     
+    // Cteate object from server
     class func createEntityObject(data: MonitorGroup, parentGroup: Group?, context: NSManagedObjectContext) -> Group {
         let newGroup = NSEntityDescription.insertNewObject(forEntityName: "Group", into: context) as! Group
         newGroup.setValue(data.id, forKey: "monitorId")
@@ -40,11 +41,13 @@ extension Group {
         return newGroup
     }
     
+    // Create empty object to fill it on client.
     class func createEntityObject(context: NSManagedObjectContext) -> Group {
         let newGroup = NSEntityDescription.insertNewObject(forEntityName: "Group", into: context) as! Group
         return newGroup
     }
     
+    // Update object from server
     func updateGroupStatus(data: MonitorGroup, parentGroup: Group?, context: NSManagedObjectContext) {
         var ids: [Int] = []
         
@@ -80,6 +83,7 @@ extension Group {
         deleteSubGroups(ids: ids, context: context)
     }
     
+    // Delete groups deleted on server
     func deleteSubGroups(ids: [Int], context: NSManagedObjectContext) {
         let predicate = NSPredicate(format: "NOT (monitorId IN %@)", ids)
         
@@ -89,6 +93,7 @@ extension Group {
         }
     }
     
+    // Delete services deleted on server
     func deleteSubServices(ids: [Int], context: NSManagedObjectContext) {
         let predicate = NSPredicate(format: "NOT (monitorId IN %@)", ids)
         
@@ -98,23 +103,22 @@ extension Group {
         }
     }
     
-    func deleteSubObjects(ids: [Int], entityName: String, context: NSManagedObjectContext) {
-        
-        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: entityName)
-        let predicate = NSPredicate(format: "NOT (monitorId IN %@)",  ids)
-        fetchRequest.predicate = predicate
+//    func deleteSubObjects(ids: [Int], entityName: String, context: NSManagedObjectContext) {
+//
+//        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: entityName)
+//        let predicate = NSPredicate(format: "NOT (monitorId IN %@)",  ids)
+//        fetchRequest.predicate = predicate
+//
+//        let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+//        do {
+//            try managedObjectContext?.execute(batchDeleteRequest)
+//        } catch {
+//            print(error)
+//        }
+//
+//    }
 
-        let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-        do {
-            try managedObjectContext?.execute(batchDeleteRequest)
-        } catch {
-            print(error)
-        }
-        
-    }
-
-    
-    
+    // Get object for server exchange
     func getMonitorGroup() -> MonitorGroup {
         var parentGroupId: Int? = nil
         if let group = group  {
@@ -125,6 +129,7 @@ extension Group {
         return object
     }
     
+    // Get number of services that are working properly.
     func getServicesOk() -> Int {
         guard let services = services else {
             return 0
@@ -132,7 +137,7 @@ extension Group {
         
         var servicesOk = 0
         services.forEach { service in
-            if (service as AnyObject).status!.id == 1 {
+            if (service as AnyObject).status?.id == 1 {
                 servicesOk += 1
             }
         }

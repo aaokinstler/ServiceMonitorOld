@@ -8,6 +8,7 @@ import CoreData
 
 extension Service {
     
+    // Get core data instance
     class func instance(id: Int, context: NSManagedObjectContext) -> Service? {
         
         let request:NSFetchRequest<Service> = Service.fetchRequest()
@@ -23,6 +24,7 @@ extension Service {
         }
     }
     
+    // Create object from server
     class func createEntityObject(data: MonitorService, parentGroup: Group,context: NSManagedObjectContext) -> Service {
         let newService = NSEntityDescription.insertNewObject(forEntityName: "Service", into: context) as! Service
         newService.setValue(data.id, forKey: "monitorId")
@@ -42,9 +44,26 @@ extension Service {
         return newService
     }
     
-    class func createEntityObject(context: NSManagedObjectContext) -> Service {
+    // Create empty object to fill it on client side.
+    class func createEntityObject(parentGroup: Group, context: NSManagedObjectContext) -> Service {
         let newService = NSEntityDescription.insertNewObject(forEntityName: "Service", into: context) as! Service
+        newService.group = parentGroup
+        newService.type = 1
         return newService
+    }
+    
+    // Update core data object from server
+    func updateService(data: MonitorService, parentGroup: Group, context: NSManagedObjectContext) {
+        name = data.name
+        descr = data.description
+        interval = Int32(data.interval)
+        address = data.address
+        if group != parentGroup {
+            group = parentGroup
+        }
+        
+        type = Int16(data.type)
+        updateStatus(data: data, context: context)
     }
     
     func updateStatus(data: MonitorService, context: NSManagedObjectContext) {
@@ -52,29 +71,20 @@ extension Service {
             return
         }
         
-        if let status = self.status {
+        if let status = status {
             status.id = Int16(statusID)
             status.name = monitorStatus.name
             status.descr = monitorStatus.description
         } else {
-            self.status = Status.createEntityObject(data: monitorStatus, context: context)
+            status = Status.createEntityObject(data: monitorStatus, context: context)
         }
         
         if let ts = data.timeStamp {
-            self.lastExecutionTime = Date(timeIntervalSince1970: ts/1000)
+            lastExecutionTime = Date(timeIntervalSince1970: ts/1000)
         }
     }
     
-    func updateService(data: MonitorService, parentGroup: Group, context: NSManagedObjectContext) {
-        self.name = data.name
-        self.descr = data.description
-        self.interval = Int16(data.interval)
-        self.address = data.address
-        self.group = parentGroup
-        self.type = Int16(data.type)
-        self.updateStatus(data: data, context: context)
-    }
-    
+    // Get object for server exchange
     func getMonitorService() throws -> MonitorService {
         
         guard let name = self.name else {
@@ -92,7 +102,7 @@ extension Service {
         
         
         if self.type == 2 {
-            if let address = self.address {
+            if let address = address {
                 if let _ = URL(string: address) {
                 } else {
                     throw ServiceFillingError.emptyAddress
@@ -112,6 +122,7 @@ extension Service {
         return object
     }
     
+    // Get amount of time since last execution
     func getTimeFromLastExecution() -> String {
         guard let lastExecutionTime = lastExecutionTime else {
             return "Never"
@@ -126,7 +137,6 @@ extension Service {
         timerString.append(String(format: "%02d:%02d:%02d", cal.hour ?? 0, cal.minute ?? 0, cal.second ?? 0))
         return timerString;
     }
-
 }
 
 enum ServiceFillingError: Error {
@@ -134,8 +144,6 @@ enum ServiceFillingError: Error {
     case emptyType
     case emptyInterval
     case emptyAddress
-    
-
 }
 
 extension ServiceFillingError: LocalizedError {

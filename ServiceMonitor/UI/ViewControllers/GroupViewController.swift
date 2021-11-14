@@ -15,11 +15,11 @@ class GroupViewController: MonitorObjectViewController {
     @IBOutlet weak var idLabel: UILabel!
     @IBOutlet weak var nameTextField: UITextField!
     
-    
-    
+    // MARK: Lifecycle methods
     override func viewDidLoad() {
         if object == nil {
             object = Group.createEntityObject(context: dataManager.dataController.viewContext)
+            object.group = parentGroup
         }
         super.viewDidLoad()
         setView()
@@ -34,6 +34,7 @@ class GroupViewController: MonitorObjectViewController {
         super.viewWillDisappear(animated)
     }
     
+    // setting up view controller
     override func setView() {
         super.setView()
         nameTextField.delegate = self
@@ -42,18 +43,13 @@ class GroupViewController: MonitorObjectViewController {
         
     }
     
-    @objc func viewTapped(gestureRecogniser: UITapGestureRecognizer) {
-        if let responderView = view.currentFirstResponder() as? UIView {
-            responderView.endEditing(false)
-        }
-    }
-    
     func setViewData() {
         let obj = object as! Group
         idLabel.text = String(obj.monitorId)
         nameTextField.text = obj.name
     }
     
+    // set view for server exchange
     override func setSavingActivity(saving: Bool) {
         nameTextField.isEnabled = !saving
         super.setSavingActivity(saving: saving)
@@ -61,8 +57,7 @@ class GroupViewController: MonitorObjectViewController {
 
 
     
-    // MARK: 
-    
+    // MARK: Delete object
     @IBAction func deleteButtonTapped(_ sender: Any) {
         let alertVC = UIAlertController(title: "Warning!", message: "Group will be deleted! Are you shure?", preferredStyle: .alert)
         alertVC.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: handleDeleteButton(_:)))
@@ -78,13 +73,14 @@ class GroupViewController: MonitorObjectViewController {
                 return
             }
             
-            self.dataManager.dataController.viewContext.delete(object)
-            try! self.dataManager.dataController.viewContext.save()
+            self.dataManager.viewContext.delete(object)
+            self.dataManager.saveViewContext()
             self.navigationController?.popViewController(animated: true)
-
         }
     }
     
+    
+    // MARK: Save changes
     @IBAction func saveButtonTapped(_ sender: Any) {
         setSavingActivity(saving: true)
         let groupObject = object as! Group
@@ -96,8 +92,6 @@ class GroupViewController: MonitorObjectViewController {
         }
     }
     
-    // MARK: CRUD operations handling
-    
     func handleSaving(id: Int?, error: String?) {
         guard let id = id else {
             showFailure(title: "Error", message: error ?? "Something go wrong!")
@@ -107,16 +101,20 @@ class GroupViewController: MonitorObjectViewController {
         
         let object = object as! Group
         object.monitorId = Int16(id)
-        try! dataManager.dataController.viewContext.save()
+        dataManager.saveViewContext()
         setViewData()
         setSavingActivity(saving: false)
     }
-    
-
 }
 
 extension GroupViewController: UITextFieldDelegate {
     func textFieldDidEndEditing(_ textField: UITextField) {
         object.name = textField.text
+    }
+    
+    @objc func viewTapped(gestureRecogniser: UITapGestureRecognizer) {
+        if let responderView = view.currentFirstResponder() as? UIView {
+            responderView.endEditing(false)
+        }
     }
 }

@@ -28,13 +28,12 @@ class ServiceViewController: MonitorObjectViewController {
     @IBOutlet weak var lastExecutionTimeLabel: UILabel!
     @IBOutlet weak var scrollView: UIScrollView!
     
-    
+    // MARK: Lifecycle methods
     override func viewDidLoad() {
         super.viewDidLoad()
         if object == nil {
-            object = Service.createEntityObject(context: dataManager.dataController.viewContext)
+            object = Service.createEntityObject(parentGroup: parentGroup, context: dataManager.dataController.viewContext)
         }
-        
         setView()
         initTypePicker()
     }
@@ -56,93 +55,7 @@ class ServiceViewController: MonitorObjectViewController {
         }
     }
     
-    func setRefreshControl() {
-        self.refreshControl = UIRefreshControl()
-        self.scrollView.alwaysBounceVertical = true
-        self.refreshControl.tintColor = UIColor.gray
-        self.refreshControl.addTarget(self, action: #selector(loadData), for: .valueChanged)
-        self.scrollView.addSubview(refreshControl)
-    }
-    
-    @objc func loadData() {
-        guard self.saveButton.isHidden else {
-            refreshControl.endRefreshing()
-            return
-        }
-        
-        guard let object = object as? Service else {
-            refreshControl.endRefreshing()
-            return
-        }
-
-        dataManager.updateServiceData(id: Int(object.monitorId))
-
-     }
-    
-    @IBAction func deleteButtonTapped(_ sender: Any) {
-        let alertVC = UIAlertController(title: "Warning!", message: "Group will be deleted! Are you shure?", preferredStyle: .alert)
-        alertVC.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: handleDeleteButton(_:)))
-        alertVC.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-        present(alertVC, animated: true, completion: nil)
-    }
-    
-    @objc func handleDeleteButton(_ sender: Any) {
-        let object  = object as! Service
-        ServiceClient.deleteOnMonitor(id: Int(object.monitorId), url: Endpoints.deleteService(id: Int(object.monitorId)).url) { success, error in
-            guard success else {
-                self.showFailure(title: "Error", message: error ?? "Something goes wrong")
-                return
-            }
-            
-            self.dataManager.dataController.viewContext.delete(object)
-            try! self.dataManager.dataController.viewContext.save()
-            self.navigationController?.popViewController(animated: true)
-        }
-    }
-    
-    
-    @IBAction func saveButtonTapped(_ sender: Any) {
-        setSavingActivity(saving: true)
-        let object = object as! Service
-        do {
-            let monitorService = try object.getMonitorService()
-            if monitorService.id != nil {
-                ServiceClient.updateOnMonitor(serviceObject: monitorService, url: Endpoints.updateService.url
-                                              , completion: handleUpdate(success:error:))
-            } else {
-                ServiceClient.addToMonitor(serviceObject: monitorService, url: Endpoints.addService.url, completion: handleSaving(id:error:))
-            }
-        } catch {
-            showFailure(title: "Error", message: error.localizedDescription)
-            setSavingActivity(saving: false)
-        }
-
-    }
-    
-    @IBAction func notificationSwitchChanged(_ sender: Any) {
-        let object = object as! Service
-        if notificationSwitch.isOn {
-            Messaging.messaging().subscribe(toTopic: String(object.monitorId), completion: handleTopicSubscription(error:))
-        } else {
-            Messaging.messaging().unsubscribe(fromTopic: String(object.monitorId), completion: handleTopicSubscription(error:))
-        }
-    }
-    
-    
-    @objc func handleTopicSubscription(error: Error!) {
-        if let error = error {
-            showFailure(title: "Error", message: error.localizedDescription)
-            self.notificationSwitch.setOn(!self.notificationSwitch.isOn, animated: true)
-            return
-        }
-        
-        let object = object as! Service
-        object.isSubscribed = self.notificationSwitch.isOn
-        try! dataManager.dataController.viewContext.save()
-        super.setSavingActivity(saving: false)
-    }
-    
-    
+    // setting up view controller
     override func setView() {
         super.setView()
         nameTextField.delegate = self
@@ -151,13 +64,11 @@ class ServiceViewController: MonitorObjectViewController {
         descriptionTextField.delegate = self
     }
     
-    override func setSavingActivity(saving: Bool) {
-        nameTextField.isEnabled = !saving
-        descriptionTextField.isEditable = !saving
-        intervalTextField.isEnabled = !saving
-        addressTextField.isEnabled = !saving
-        typeTextField.isEnabled = !saving
-        super.setSavingActivity(saving: saving)
+    func initTypePicker() {
+        typePicker = UIPickerView()
+        typePicker.dataSource = self
+        typePicker.delegate = self
+        typeTextField.inputView = typePicker
     }
     
     func setViewData() {
@@ -206,12 +117,105 @@ class ServiceViewController: MonitorObjectViewController {
         }
     }
     
+    func subscribeToKeyboardNotifications() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(_:)), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillDisappear(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
+        
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(viewTapped(gestureRecogniser:)))
+        view.addGestureRecognizer(tapGesture)
+    }
     
-    func initTypePicker() {
-        typePicker = UIPickerView()
-        typePicker.dataSource = self
-        typePicker.delegate = self
-        typeTextField.inputView = typePicker
+    // setting view for manual update
+    func setRefreshControl() {
+        
+        refreshControl = UIRefreshControl()
+        scrollView.alwaysBounceVertical = true
+        refreshControl.tintColor = UIColor.gray
+        refreshControl.addTarget(self, action: #selector(loadData), for: .valueChanged)
+        scrollView.addSubview(refreshControl)
+    }
+    
+    // MARK: Manually update service data from server
+    @objc func loadData() {
+        guard self.saveButton.isHidden else {
+            // if we have unsaved changes, we will skip this operation.
+            refreshControl.endRefreshing()
+            return
+        }
+        
+        guard let object = object as? Service else {
+            refreshControl.endRefreshing()
+            return
+        }
+
+        dataManager.updateServiceData(id: Int(object.monitorId))
+     }
+   
+    // MARK: Delete service
+    @IBAction func deleteButtonTapped(_ sender: Any) {
+        let alertVC = UIAlertController(title: "Warning!", message: "Group will be deleted! Are you shure?", preferredStyle: .alert)
+        alertVC.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: handleDeleteButton(_:)))
+        alertVC.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        present(alertVC, animated: true, completion: nil)
+    }
+    
+    @objc func handleDeleteButton(_ sender: Any) {
+        dataManager.stopAutoUpdate()
+        let object  = object as! Service
+        ServiceClient.deleteOnMonitor(id: Int(object.monitorId), url: Endpoints.deleteService(id: Int(object.monitorId)).url) { success, error in
+            guard success else {
+                self.showFailure(title: "Error", message: error ?? "Something goes wrong")
+                self.dataManager.startAutoupdate()
+                return
+            }
+            
+            self.dataManager.viewContext.delete(object)
+            self.dataManager.saveViewContext()
+            self.navigationController?.popViewController(animated: true)
+        }
+    }
+    
+    // MARK: Subscribe to push notifications
+    @IBAction func notificationSwitchChanged(_ sender: Any) {
+        let object = object as! Service
+        if notificationSwitch.isOn {
+            Messaging.messaging().subscribe(toTopic: String(object.monitorId), completion: handleTopicSubscription(error:))
+        } else {
+            Messaging.messaging().unsubscribe(fromTopic: String(object.monitorId), completion: handleTopicSubscription(error:))
+        }
+    }
+    
+    @objc func handleTopicSubscription(error: Error!) {
+        if let error = error {
+            showFailure(title: "Error", message: error.localizedDescription)
+            notificationSwitch.setOn(!self.notificationSwitch.isOn, animated: true)
+            return
+        }
+        
+        let object = object as! Service
+        object.isSubscribed = self.notificationSwitch.isOn
+        dataManager.saveViewContext()
+        super.setSavingActivity(saving: false)
+    }
+    
+    // MARK: Save changes
+    @IBAction func saveButtonTapped(_ sender: Any) {
+        setSavingActivity(saving: true)
+        let object = object as! Service
+        do {
+            // if service new, adding object to server, else updating it.
+            let monitorService = try object.getMonitorService()
+            if monitorService.id != nil {
+                ServiceClient.updateOnMonitor(serviceObject: monitorService, url: Endpoints.updateService.url
+                                              , completion: handleUpdate(success:error:))
+            } else {
+                ServiceClient.addToMonitor(serviceObject: monitorService, url: Endpoints.addService.url, completion: handleSaving(id:error:))
+            }
+        } catch {
+            showFailure(title: "Error", message: error.localizedDescription)
+            setSavingActivity(saving: false)
+        }
+
     }
     
     func handleSaving(id: Int?, error: String?) {
@@ -221,23 +225,25 @@ class ServiceViewController: MonitorObjectViewController {
             return
         }
         
+        // if service updated successfully, setting object ID and saving core data object.
         let object = object as! Service
         object.monitorId = Int16(id)
-        try! dataManager.dataController.viewContext.save()
+        dataManager.saveViewContext()
         setViewData()
         setSavingActivity(saving: false)
     }
     
-
-    
-    func subscribeToKeyboardNotifications() {
-        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(_:)), name: UIResponder.keyboardWillShowNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillDisappear(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
-        
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(viewTapped(gestureRecogniser:)))
-        self.view.addGestureRecognizer(tapGesture)
+    //Setting view for saving operation
+    override func setSavingActivity(saving: Bool) {
+        nameTextField.isEnabled = !saving
+        descriptionTextField.isEditable = !saving
+        intervalTextField.isEnabled = !saving
+        addressTextField.isEnabled = !saving
+        typeTextField.isEnabled = !saving
+        super.setSavingActivity(saving: saving)
     }
-    
+        
+    // MARK: Handle automatic/manual service data upadates.
     @objc func onServiceUpdate(_ notification: Notification) {
         if refreshControl.isRefreshing {
             refreshControl.endRefreshing()
@@ -245,6 +251,7 @@ class ServiceViewController: MonitorObjectViewController {
         setStatusData()
     }
     
+    // MARK: Working with keyboard
     @objc func viewTapped(gestureRecogniser: UITapGestureRecognizer) {
         if let responderView = view.currentFirstResponder() as? UIView {
             responderView.endEditing(false)
@@ -252,16 +259,17 @@ class ServiceViewController: MonitorObjectViewController {
     }
     
     @objc func keyboardWillShow(_ notification: Notification) {
+        // If the keyboard overlaps the input field, move the onput field.
         let responderView = view.currentFirstResponder() as! UIView
         let height: CGFloat = getKeyboardHeight(notification)
  
-
         if view.frame.maxY - responderView.frame.maxY < height {
             view.frame.origin.y = -height
         }
     }
     
     func getKeyboardHeight(_ notification: Notification) -> CGFloat {
+        // determine the height of the keyboard or picker view
         let userInfo = notification.userInfo
         let keyboardSize = userInfo![UIResponder.keyboardFrameEndUserInfoKey] as! NSValue
         return keyboardSize.cgRectValue.height
@@ -274,6 +282,8 @@ class ServiceViewController: MonitorObjectViewController {
     }
 }
 
+// MARK: Tracking changes
+// MARK: Service type picker extension
 extension ServiceViewController: UIPickerViewDataSource, UIPickerViewDelegate {
     func numberOfComponents(in pickerView: UIPickerView) -> Int {
         return 1
@@ -297,11 +307,17 @@ extension ServiceViewController: UIPickerViewDataSource, UIPickerViewDelegate {
 }
 
 extension ServiceViewController: UITextFieldDelegate {
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.endEditing(true)
+        return false
+    }
+    
     func textFieldDidEndEditing(_ textField: UITextField) {
         switch textField.tag {
         case 1: object.name = textField.text
         case 2: let object = object as! Service
-            object.interval = Int16(textField.text ?? "") ?? 0
+            object.interval = Int32(textField.text ?? "") ?? 0
             textField.text = String(object.interval)
         case 3: let object = object as! Service
             object.address = textField.text

@@ -8,14 +8,18 @@
 import CoreData
 
 extension MonitorObject {
+    // Changing parent group content if we changed parent
     public override func didChangeValue(forKey key: String) {
         super.didChangeValue(forKey: key)
+        if self.isDeleted && !self.isInserted{ // skip this step on deleting. Core data will do it for us.
+            return
+        }
         if key == "group" {
-            if self.group != nil {
+            if let group = group {
                 if self.entity.name == "Group" {
-                    self.group?.addToGroups(self as! Group)
+                    group.addToGroups(self as! Group)
                 } else {
-                    self.group?.addToServices(self as! Service)
+                    group.addToServices(self as! Service)
                 }
             }
         }
@@ -23,12 +27,16 @@ extension MonitorObject {
     
     public override func willChangeValue(forKey key: String) {
         super.willChangeValue(forKey: key)
+        if self.isDeleted && !self.isInserted {
+            return
+        }
         if key == "group" {
-            if self.group != nil {
+            if let group = group {
+            
                 if self.entity.name == "Group" {
-                    group?.removeFromGroups(self as! Group)
+                    group.removeFromGroups(self as! Group)
                 } else {
-                    group?.removeFromServices(self as! Service)
+                    group.removeFromServices(self as! Service)
                 }
             }
         }

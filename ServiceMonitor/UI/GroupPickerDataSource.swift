@@ -8,6 +8,7 @@
 import UIKit
 import CoreData
 
+// Group picker
 class GroupPickerDataSource: NSObject, UIPickerViewDataSource, UIPickerViewDelegate, NSFetchRequestResult {
      
     var dataController: DataController!
@@ -20,7 +21,7 @@ class GroupPickerDataSource: NSObject, UIPickerViewDataSource, UIPickerViewDeleg
         self.object = object
         let fetchRequest: NSFetchRequest<Group> = Group.fetchRequest()
         
-        if object.entity.name == "Group" {
+        if object.entity.name == "Group" { // Exlude current group for selection.
             let predicate = NSPredicate(format: "self != %@", object.objectID)
             fetchRequest.predicate = predicate
         }

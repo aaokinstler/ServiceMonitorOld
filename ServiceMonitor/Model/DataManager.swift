@@ -6,10 +6,12 @@
 //
 import CoreData
 
+// The class is responsible for updating data from the server.
 class DataManager {
     
     var dataController: DataController
     var backgroundContext: NSManagedObjectContext
+    var viewContext: NSManagedObjectContext
     var updatingTimeInterval: TimeInterval
     var autoUpdateIsOn: Bool
     
@@ -19,6 +21,7 @@ class DataManager {
         dataController = DataController()
         dataController.load()
         backgroundContext = dataController.backgroundContext
+        viewContext = dataController.viewContext
         updatingTimeInterval = 0
         autoUpdateIsOn = false
     }
@@ -38,7 +41,30 @@ class DataManager {
         updatingTimeInterval = 0
     }
     
+    // MARK: Saving
+    func saveViewContext() {
+        if viewContext.hasChanges {
+            do {
+                try viewContext.save()
+            } catch {
+                print(error)
+            }
+        }
+    }
+    
+    private func saveBackgroundContext() {
+        if backgroundContext.hasChanges {
+            do {
+                try backgroundContext.save()
+            } catch {
+                print(error)
+            }
+        }
+    }
+    
+    
     // MARK: Update monitor
+    // Updating all information about groups and services.
     func updateMonitorData() {
         backgroundContext.perform {
             ServiceClient.getMonitorStatus(completion: self.handleMonitorStatus(monitorGroups:error:))
@@ -67,10 +93,12 @@ class DataManager {
         deleteRootGroups(ids: ids)
         
 
-        try! backgroundContext.save()
+        saveBackgroundContext()
         NotificationCenter.default.post(name: .didUpdateGroup, object: nil)
     }
     
+    
+    // Delete groups that was deleted on server
     private func deleteRootGroups(ids: [Int]) {
         let request:NSFetchRequest<Group> = Group.fetchRequest()
         let predicate = NSPredicate(format: "group == nil && NOT (monitorId IN %@)", ids)
@@ -96,7 +124,16 @@ class DataManager {
             NotificationCenter.default.post(name: .didReceiveError, object: nil, userInfo: errorDataDict)
             return
         }
+        
+        // MARK: Delete
+        if backgroundContext.hasChanges {
+            print("background context has changes")
+        }
 
+        if dataController.viewContext.hasChanges {
+            print("view cintext has changes")
+        }
+        
         guard let groupObject = Group.instance(id: monitorGroup!.id, context: backgroundContext) else {
             let errorDataDict:[String: String] = ["error": "Parent group for group currently being updated was not found."]
             NotificationCenter.default.post(name: .didReceiveError, object: nil, userInfo: errorDataDict)
@@ -111,7 +148,11 @@ class DataManager {
         
         groupObject.updateGroupStatus(data: monitorGroup!, parentGroup: parentGroup, context: backgroundContext)
         
-        try! backgroundContext.save()
+        if dataController.viewContext.hasChanges {
+            print("view cintext has changes")
+        }
+
+        saveBackgroundContext()
         NotificationCenter.default.post(name: .didUpdateGroup, object: nil)
     }
     
@@ -143,10 +184,9 @@ class DataManager {
         }
         
         serviceObject.updateService(data: monitorService!, parentGroup: parentGroup, context: backgroundContext)
-        
-        try! backgroundContext.save()
+   
+        saveBackgroundContext()
         NotificationCenter.default.post(name: .didUpdateService, object: nil)
-        
     }
 }
 

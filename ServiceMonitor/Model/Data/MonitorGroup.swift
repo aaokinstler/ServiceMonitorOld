@@ -7,10 +7,11 @@
 
 import Foundation
 
+// Server object that contains services combined on a logical basis.
 struct MonitorGroup : Codable {
-    let id: Int!
-    let name: String
-    let parent: Int!
-    let sevicesWithStatus: [MonitorService]!
-    let gruops : [MonitorGroup]!
+    let id: Int! // Unique ID
+    let name: String // Name
+    let parent: Int! // Parent group upnique ID
+    let sevicesWithStatus: [MonitorService]! // Subservices
+    let gruops : [MonitorGroup]! // Subgroups
 }

@@ -16,7 +16,7 @@ class NavigationControllerVC: UINavigationController {
     }
     
     @objc func handleNotification(_ notification: Notification) {
-        
+        // handle errors of background context
         if let message = notification.userInfo?["error"] as? String {
             let alertVC = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
             alertVC.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))

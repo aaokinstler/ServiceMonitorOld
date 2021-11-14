@@ -15,10 +15,7 @@ class MonitorObjectViewController: UIViewController {
     @IBOutlet weak var deleteButton: UIBarButtonItem!
     @IBOutlet weak var savingIndicator: UIActivityIndicatorView!
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-    }
-    
+    // MARK: Lifecycle methods
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         groupTextField.text = parentGroup?.name
@@ -33,13 +30,43 @@ class MonitorObjectViewController: UIViewController {
             return
         }
         
+        // roll back unsaved changes
         if object.isInserted {
-            dataManager.dataController.viewContext.delete(object)
+            dataManager.viewContext.delete(object)
+            dataManager.saveViewContext()
             return
         }
         
         if object.hasChanges {
-            dataManager.dataController.viewContext.rollback()
+            dataManager.viewContext.rollback()
+            dataManager.saveViewContext()
+        }
+    }
+    
+    // show or hide save button
+    func setSaveButton() {
+        saveButton.isHidden = !object.hasChanges
+        deleteButton.isEnabled = !object.isInserted
+        if object.hasChanges {
+            dataManager.stopAutoUpdate()
+        } else {
+            dataManager.startAutoupdate()
+        }
+    }
+    
+    // setting up view controller
+    func setView() {
+        initGroupPicker()
+        if parentGroup != nil {
+            setCurrentGroup()
+        }
+        removeSaveNotificationObserver()
+        saveObserverToken =  NotificationCenter.default.addObserver(self, selector: #selector (handleDidChangeNotification(_ :)), name: .NSManagedObjectContextObjectsDidChange, object: dataManager.dataController.viewContext)
+    }
+    
+    func removeSaveNotificationObserver() {
+        if let token = saveObserverToken {
+            NotificationCenter.default.removeObserver(token)
         }
     }
     
@@ -50,17 +77,9 @@ class MonitorObjectViewController: UIViewController {
         groupPicker.delegate = groupPickerDS
         groupTextField.inputView = groupPicker
     }
-    
-    func setView() {
-        initGroupPicker()
-        if parentGroup != nil {
-            setCurrentGroup()
-        }
-        removeSaveNotificationObserver()
-        saveObserverToken =  NotificationCenter.default.addObserver(self, selector: #selector (handleDidChangeNotification(_ :)), name: .NSManagedObjectContextObjectsDidChange, object: dataManager.dataController.viewContext)
-    }
-    
+        
     func setCurrentGroup() {
+        // Setting right group to group picker
         var index = 0
         groupSelectLoop: for group in groupPickerDS.objects {
             if group == parentGroup {
@@ -72,24 +91,14 @@ class MonitorObjectViewController: UIViewController {
         groupPicker.selectRow(index, inComponent: 0, animated: false)
     }
     
-    
+    // handle errors
     func showFailure(title: String, message: String) {
         let alertVC = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alertVC.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
         present(alertVC, animated: true, completion: nil)
     }
-    
-    func handleUpdate(success: Bool, error: String?) {
-        guard success else {
-            self.showFailure(title: "Error", message: error ?? "Something goes wrong")
-            setSavingActivity(saving: false)
-            return
-        }
-        
-        try! self.dataManager.dataController.viewContext.save()
-        setSavingActivity(saving: false)
-    }
-    
+
+    // set view for server exchange
     func setSavingActivity(saving: Bool) {
         groupTextField.isEnabled = !saving
         
@@ -103,26 +112,23 @@ class MonitorObjectViewController: UIViewController {
         }
     }
     
-    func removeSaveNotificationObserver() {
-        if let token = saveObserverToken {
-            NotificationCenter.default.removeObserver(token)
-        }
-    }
-    
-    func setSaveButton() {
-        saveButton.isHidden = !object.hasChanges
-        deleteButton.isEnabled = !object.isInserted
-        if object.hasChanges {
-            dataManager.stopAutoUpdate()
-        } else {
-            dataManager.startAutoupdate()
-        }
-    }
-    
+    // set save button after object changes
     @objc func handleDidChangeNotification(_ notification: NSNotification) {
         if let updated = notification.userInfo?[NSUpdatedObjectsKey] as? Set<NSManagedObject>,
            updated.contains(object){
             setSaveButton()
         }
+    }
+    
+    // handle server responce after insert or update operation
+    func handleUpdate(success: Bool, error: String?) {
+        guard success else {
+            self.showFailure(title: "Error", message: error ?? "Something goes wrong")
+            setSavingActivity(saving: false)
+            return
+        }
+        
+        try! self.dataManager.dataController.viewContext.save()
+        setSavingActivity(saving: false)
     }
 }

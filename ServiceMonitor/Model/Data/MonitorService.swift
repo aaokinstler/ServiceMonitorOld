@@ -7,17 +7,18 @@
 
 import Foundation
 
+// Server object that contains information about specific service
 struct MonitorService: Codable {
-    let id: Int?
-    let name: String
-    let type: Int
-    let description: String?
-    let address: String?
-    let interval: Int
-    let parent: Int?
-    let status: ServiceStatus?
-    let timeStamp: Double?
-    let diff: Int?
+    let id: Int? // Unique ID
+    let name: String // Service name
+    let type: Int // Service type 1 - executable,  2 - web service
+    let description: String? //  Short description of the service
+    let address: String? // URL of web service
+    let interval: Int // The execution interval for the service. (For executable services)
+    let parent: Int? // Unique ID of parent group
+    let status: ServiceStatus? // Service status information.
+    let timeStamp: Double? // Time stamp of last execution/check.
+    let diff: Int? // Amount of seconds since last execution.
 }
 
 struct ServiceStatus: Codable {

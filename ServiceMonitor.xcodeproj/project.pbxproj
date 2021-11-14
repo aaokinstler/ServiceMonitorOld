@@ -13,6 +13,7 @@
 		0B0306BE26DFDD97008D95D2 /* MonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B0306BD26DFDD97008D95D2 /* MonitorService.swift */; };
 		0B0306C226DFF163008D95D2 /* MonitorData.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 0B0306C026DFF163008D95D2 /* MonitorData.xcdatamodeld */; };
 		0B1CEDE427098B7E00007906 /* MonitorResponce.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B1CEDE327098B7E00007906 /* MonitorResponce.swift */; };
+		0B3B328A2740F86A0002125D /* Readme.txt in Resources */ = {isa = PBXBuildFile; fileRef = 0B3B32892740F8690002125D /* Readme.txt */; };
 		0B6BC0C426F7154B0095EB97 /* ServiceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B6BC0C326F7154B0095EB97 /* ServiceViewController.swift */; };
 		0B6BC0C626F761CC0095EB97 /* ServiceTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B6BC0C526F761CC0095EB97 /* ServiceTypes.swift */; };
 		0B7113A626EE230900045AFA /* GroupCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B7113A526EE230900045AFA /* GroupCell.swift */; };
@@ -49,6 +50,7 @@
 		0B0306C126DFF163008D95D2 /* MonitorData.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = MonitorData.xcdatamodel; sourceTree = "<group>"; };
 		0B0E4F432714A74D00ACE661 /* ServiceMonitor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ServiceMonitor.entitlements; sourceTree = "<group>"; };
 		0B1CEDE327098B7E00007906 /* MonitorResponce.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitorResponce.swift; sourceTree = "<group>"; };
+		0B3B32892740F8690002125D /* Readme.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Readme.txt; sourceTree = SOURCE_ROOT; };
 		0B6BC0C326F7154B0095EB97 /* ServiceViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceViewController.swift; sourceTree = "<group>"; };
 		0B6BC0C526F761CC0095EB97 /* ServiceTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceTypes.swift; sourceTree = "<group>"; };
 		0B7113A526EE230900045AFA /* GroupCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupCell.swift; sourceTree = "<group>"; };
@@ -184,6 +186,7 @@
 		0BD5EFFD26DD458D000A506A /* ServiceMonitor */ = {
 			isa = PBXGroup;
 			children = (
+				0B3B32892740F8690002125D /* Readme.txt */,
 				0B995D44271DDA72000E4C72 /* GoogleService-Info.plist */,
 				0B0E4F432714A74D00ACE661 /* ServiceMonitor.entitlements */,
 				0B7113A426EE22A000045AFA /* UI */,
@@ -277,6 +280,7 @@
 				0BD5F00E26DD458F000A506A /* LaunchScreen.storyboard in Resources */,
 				0B995D45271DDA72000E4C72 /* GoogleService-Info.plist in Resources */,
 				0BD5F00B26DD458F000A506A /* Assets.xcassets in Resources */,
+				0B3B328A2740F86A0002125D /* Readme.txt in Resources */,
 				0BD5F00626DD458D000A506A /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

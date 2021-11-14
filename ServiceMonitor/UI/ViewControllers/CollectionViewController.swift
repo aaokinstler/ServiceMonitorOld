@@ -10,7 +10,7 @@ import CoreData
 
 class CollectionViewController: UICollectionViewController, UIGestureRecognizerDelegate {
     
-    @IBOutlet weak var addButton: UIBarButtonItem!
+    
     var dataManager: DataManager!
     var parentGroup: Group!
     var fetchedResultController: NSFetchedResultsController<MonitorObject>!
@@ -18,6 +18,9 @@ class CollectionViewController: UICollectionViewController, UIGestureRecognizerD
     var lgpr: UILongPressGestureRecognizer!
     var refreshControl: UIRefreshControl!
     
+    @IBOutlet weak var addButton: UIBarButtonItem!
+    
+    // MARK: Lifecycle methods
     fileprivate func setFetchedResultController() {
         let fetchRequest: NSFetchRequest<MonitorObject> = MonitorObject.fetchRequest()
         var predicate:NSPredicate
@@ -54,47 +57,12 @@ class CollectionViewController: UICollectionViewController, UIGestureRecognizerD
         super.viewWillAppear(animated)
         dataManager.object = parentGroup
         dataManager.startAutoupdate()
+        setTitle()
     }
     
-    
-    func setRefreshControl() {
-        self.refreshControl = UIRefreshControl()
-        self.collectionView!.alwaysBounceVertical = true
-        self.refreshControl.tintColor = UIColor.gray
-        self.refreshControl.addTarget(self, action: #selector(loadData), for: .valueChanged)
-        self.collectionView!.addSubview(refreshControl)
-    }
-    
-    @objc func loadData() {
-        //self.collectionView!.refreshControl!.beginRefreshing()
-        refreshControl.beginRefreshing()
-        if let parentGroup = parentGroup {
-            dataManager.updateGroupData(id: Int(parentGroup.monitorId))
-        } else {
-            dataManager.updateMonitorData()
-        }
-     }
-
-    
-    func setTitle() {
-        if parentGroup == nil {
-            self.title = "Service Monitor"
-        } else {
-            self.title = parentGroup.name
-        }
-    }
-    
-    func setAddButton() {
-        let usersItem = UIAction(title: "Group") { (action) in
-            self.pushGroupObjectVC(monitorObject: nil)
-        }
-        
-        let addUserItem = UIAction(title: "Service") { (action) in
-            self.pushServiceVC(monitorObject: nil)
-        }
-        
-        let menu = UIMenu(title: "Add", options: .displayInline, children: [usersItem , addUserItem])
-        addButton.menu = menu
+    func configureDatasource() {
+        datasource = UICollectionViewDiffableDataSource(collectionView: collectionView, cellProvider: configureCell(_:indexPath:identifier:))
+        collectionView.dataSource = datasource
     }
     
     func setLayout() {
@@ -104,15 +72,46 @@ class CollectionViewController: UICollectionViewController, UIGestureRecognizerD
         albumFlowLayout.minimumInteritemSpacing = 0
         albumFlowLayout.minimumLineSpacing = 2
         albumFlowLayout.sectionInset = UIEdgeInsets(top:2, left: 2, bottom: 2, right: 2)
-        
         collectionView.collectionViewLayout = albumFlowLayout
     }
     
-    func configureDatasource() {
-        datasource = UICollectionViewDiffableDataSource(collectionView: collectionView, cellProvider: configureCell(_:indexPath:identifier:))
-        collectionView.dataSource = datasource
+    // set button to add group or service
+    func setAddButton() {
+        var actions:[UIAction] = []
+        let groupAction = UIAction(title: "Group") { (action) in
+            self.pushGroupObjectVC(monitorObject: nil)
+        }
+        actions.append(groupAction)
+        
+        if parentGroup != nil {
+            let serviceAction = UIAction(title: "Service") { (action) in
+                self.pushServiceVC(monitorObject: nil)
+            }
+            actions.append(serviceAction)
+        }
+        
+        let menu = UIMenu(title: "Add", options: .displayInline, children: actions)
+        addButton.menu = menu
     }
     
+    // set refresh control for manual updating.
+    func setRefreshControl() {
+        self.refreshControl = UIRefreshControl()
+        self.collectionView!.alwaysBounceVertical = true
+        self.refreshControl.tintColor = UIColor.gray
+        self.refreshControl.addTarget(self, action: #selector(loadData), for: .valueChanged)
+        self.collectionView!.addSubview(refreshControl)
+    }
+    
+    func setTitle() {
+        if parentGroup == nil {
+            self.title = "Service Monitor"
+        } else {
+            self.title = parentGroup.name
+        }
+    }
+    
+    // MARK: configuring cells
     @objc func configureCell(_ collectionView: UICollectionView,  indexPath: IndexPath, identifier: Any) -> UICollectionViewCell {
  
         let monitorObject = fetchedResultController.object(at: indexPath)
@@ -155,18 +154,21 @@ class CollectionViewController: UICollectionViewController, UIGestureRecognizerD
         
         groupCell.servicesInfoLabel.text = "\(servicesOk)/\(servicesAll)"
         
-        switch servicesOk  {
-        case 0:
+        if servicesAll == 0 {
             groupCell.backgroundColor = .gray
-        case ..<servicesAll:
-            groupCell.backgroundColor = .customYellow
-        case servicesAll:
-            groupCell.backgroundColor = .customGreen
-        default:
-            groupCell.backgroundColor = .gray
+        } else {
+            switch servicesOk  {
+            case ..<servicesAll:
+                groupCell.backgroundColor = .customYellow
+            case servicesAll:
+                groupCell.backgroundColor = .customGreen
+            default:
+                groupCell.backgroundColor = .gray
+            }
         }
     }
     
+    // MARK: Handling cell selection
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         
         let monitorObject = fetchedResultController.object(at: indexPath)
@@ -176,6 +178,11 @@ class CollectionViewController: UICollectionViewController, UIGestureRecognizerD
         } else {
             pushServiceVC(monitorObject: monitorObject)
         }
+    }
+    
+    @IBAction func groupEditButtonTapped(_ sender: UIButton) {
+        let ip = IndexPath(item: sender.tag, section: 0)
+        pushGroupObjectVC(monitorObject: fetchedResultController.object(at: ip))
     }
     
     func pushGroupVC(monitorObject: MonitorObject) {
@@ -209,13 +216,18 @@ class CollectionViewController: UICollectionViewController, UIGestureRecognizerD
         }
         
         self.navigationController?.pushViewController(controller, animated: true)
-        
     }
     
-    @IBAction func groupEditButtonTapped(_ sender: UIButton) {
-        let ip = IndexPath(item: sender.tag, section: 0)
-        pushGroupObjectVC(monitorObject: fetchedResultController.object(at: ip))
-    }
+    // MARK: Manual update information.
+    @objc func loadData() {
+        
+        refreshControl.beginRefreshing()
+        if let parentGroup = parentGroup {
+            dataManager.updateGroupData(id: Int(parentGroup.monitorId))
+        } else {
+            dataManager.updateMonitorData()
+        }
+     }
     
     @objc func onDidReceiveData(_ notification: Notification) {
         if refreshControl.isRefreshing {
@@ -223,6 +235,7 @@ class CollectionViewController: UICollectionViewController, UIGestureRecognizerD
         }
     }
 }
+
 
 extension CollectionViewController: NSFetchedResultsControllerDelegate {
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChangeContentWith snapshot: NSDiffableDataSourceSnapshotReference) {
