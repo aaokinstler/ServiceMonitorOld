@@ -29,6 +29,7 @@ class ServiceClient {
                     completion(responseObject, nil)
                 }
             } catch {
+                print(String(bytes: data, encoding: .utf8))
                 DispatchQueue.main.async {
                     completion(nil, error.localizedDescription)
                 }

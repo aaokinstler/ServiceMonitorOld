@@ -188,6 +188,9 @@ class DataManager {
         saveBackgroundContext()
         NotificationCenter.default.post(name: .didUpdateService, object: nil)
     }
+    
+    // MARK: Seingletone
+    static let shared = DataManager()
 }
 
 extension DataManager {

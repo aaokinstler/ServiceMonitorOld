@@ -11,13 +11,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
     
-    lazy var dataManager = DataManager()
+//    lazy var dataManager = DataManager()
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let _ = (scene as? UIWindowScene) else { return }
-        let navigationController = window?.rootViewController as! UINavigationController
-        let collectionViewController = navigationController.topViewController as! CollectionViewController
-        collectionViewController.dataManager = dataManager
+//        let navigationController = window?.rootViewController as! UINavigationController
+//        let collectionViewController = navigationController.topViewController as! CollectionViewController
+//        collectionViewController.dataManager = dataManager
     }
 }
 

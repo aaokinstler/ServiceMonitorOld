@@ -3,7 +3,6 @@ import CoreData
 
 class MonitorObjectViewController: UIViewController {
     
-    var dataManager: DataManager!
     var object: MonitorObject!
     var parentGroup: Group!
     var groupPicker: UIPickerView!
@@ -32,14 +31,14 @@ class MonitorObjectViewController: UIViewController {
         
         // roll back unsaved changes
         if object.isInserted {
-            dataManager.viewContext.delete(object)
-            dataManager.saveViewContext()
+            DataManager.shared.viewContext.delete(object)
+            DataManager.shared.saveViewContext()
             return
         }
         
         if object.hasChanges {
-            dataManager.viewContext.rollback()
-            dataManager.saveViewContext()
+            DataManager.shared.viewContext.rollback()
+            DataManager.shared.saveViewContext()
         }
     }
     
@@ -48,9 +47,9 @@ class MonitorObjectViewController: UIViewController {
         saveButton.isHidden = !object.hasChanges
         deleteButton.isEnabled = !object.isInserted
         if object.hasChanges {
-            dataManager.stopAutoUpdate()
+            DataManager.shared.stopAutoUpdate()
         } else {
-            dataManager.startAutoupdate()
+            DataManager.shared.startAutoupdate()
         }
     }
     
@@ -61,7 +60,7 @@ class MonitorObjectViewController: UIViewController {
             setCurrentGroup()
         }
         removeSaveNotificationObserver()
-        saveObserverToken =  NotificationCenter.default.addObserver(self, selector: #selector (handleDidChangeNotification(_ :)), name: .NSManagedObjectContextObjectsDidChange, object: dataManager.dataController.viewContext)
+        saveObserverToken =  NotificationCenter.default.addObserver(self, selector: #selector (handleDidChangeNotification(_ :)), name: .NSManagedObjectContextObjectsDidChange, object: DataManager.shared.viewContext)
     }
     
     func removeSaveNotificationObserver() {
@@ -72,7 +71,7 @@ class MonitorObjectViewController: UIViewController {
     
     func initGroupPicker() {
         groupPicker = UIPickerView()
-        groupPickerDS = GroupPickerDataSource(dataController: dataManager.dataController, object: object, textView: groupTextField)
+        groupPickerDS = GroupPickerDataSource(dataController: DataManager.shared.dataController, object: object, textView: groupTextField)
         groupPicker.dataSource = groupPickerDS
         groupPicker.delegate = groupPickerDS
         groupTextField.inputView = groupPicker
@@ -103,7 +102,7 @@ class MonitorObjectViewController: UIViewController {
         groupTextField.isEnabled = !saving
         
         if saving {
-            dataManager.stopAutoUpdate()
+            DataManager.shared.stopAutoUpdate()
             saveButton.isHidden = true
             savingIndicator.startAnimating()
         } else {
@@ -128,7 +127,7 @@ class MonitorObjectViewController: UIViewController {
             return
         }
         
-        try! self.dataManager.dataController.viewContext.save()
+        DataManager.shared.saveViewContext()
         setSavingActivity(saving: false)
     }
 }

@@ -32,7 +32,7 @@ class ServiceViewController: MonitorObjectViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         if object == nil {
-            object = Service.createEntityObject(parentGroup: parentGroup, context: dataManager.dataController.viewContext)
+            object = Service.createEntityObject(parentGroup: parentGroup, context: DataManager.shared.viewContext)
         }
         setView()
         initTypePicker()
@@ -42,7 +42,7 @@ class ServiceViewController: MonitorObjectViewController {
         super.viewWillAppear(animated)
         setViewData()
         subscribeToKeyboardNotifications()
-        dataManager.object = object
+        DataManager.shared.object = object
         setRefreshControl()
         
         updateObserverToken = NotificationCenter.default.addObserver(self, selector: #selector(onServiceUpdate(_:)), name: .didUpdateService , object: nil)
@@ -148,7 +148,7 @@ class ServiceViewController: MonitorObjectViewController {
             return
         }
 
-        dataManager.updateServiceData(id: Int(object.monitorId))
+        DataManager.shared.updateServiceData(id: Int(object.monitorId))
      }
    
     // MARK: Delete service
@@ -160,17 +160,17 @@ class ServiceViewController: MonitorObjectViewController {
     }
     
     @objc func handleDeleteButton(_ sender: Any) {
-        dataManager.stopAutoUpdate()
+        DataManager.shared.stopAutoUpdate()
         let object  = object as! Service
         ServiceClient.deleteOnMonitor(id: Int(object.monitorId), url: Endpoints.deleteService(id: Int(object.monitorId)).url) { success, error in
             guard success else {
                 self.showFailure(title: "Error", message: error ?? "Something goes wrong")
-                self.dataManager.startAutoupdate()
+                DataManager.shared.startAutoupdate()
                 return
             }
             
-            self.dataManager.viewContext.delete(object)
-            self.dataManager.saveViewContext()
+            DataManager.shared.viewContext.delete(object)
+            DataManager.shared.saveViewContext()
             self.navigationController?.popViewController(animated: true)
         }
     }
@@ -178,6 +178,7 @@ class ServiceViewController: MonitorObjectViewController {
     // MARK: Subscribe to push notifications
     @IBAction func notificationSwitchChanged(_ sender: Any) {
         let object = object as! Service
+        DataManager.shared.stopAutoUpdate()
         if notificationSwitch.isOn {
             Messaging.messaging().subscribe(toTopic: String(object.monitorId), completion: handleTopicSubscription(error:))
         } else {
@@ -189,12 +190,13 @@ class ServiceViewController: MonitorObjectViewController {
         if let error = error {
             showFailure(title: "Error", message: error.localizedDescription)
             notificationSwitch.setOn(!self.notificationSwitch.isOn, animated: true)
+            DataManager.shared.startAutoupdate()
             return
         }
         
         let object = object as! Service
         object.isSubscribed = self.notificationSwitch.isOn
-        dataManager.saveViewContext()
+        DataManager.shared.saveViewContext()
         super.setSavingActivity(saving: false)
     }
     
@@ -228,7 +230,7 @@ class ServiceViewController: MonitorObjectViewController {
         // if service updated successfully, setting object ID and saving core data object.
         let object = object as! Service
         object.monitorId = Int16(id)
-        dataManager.saveViewContext()
+        DataManager.shared.saveViewContext()
         setViewData()
         setSavingActivity(saving: false)
     }

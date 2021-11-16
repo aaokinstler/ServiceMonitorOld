@@ -80,15 +80,12 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         
         let window = (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.window
         let navigationController = window?.rootViewController as! UINavigationController
-        let collectionViewController = navigationController.topViewController as! CollectionViewController
         let controller = navigationController.storyboard!.instantiateViewController(identifier: "ServiceVC") as! ServiceViewController
-        if let dataManager = collectionViewController.dataManager {
-            controller.dataManager = dataManager
-            let serviceObject = Service.instance(id: id, context: dataManager.dataController.viewContext)
-            controller.object = serviceObject
-            controller.parentGroup = serviceObject?.group
-            navigationController.pushViewController(controller, animated: true)
-        }
+        let serviceObject = Service.instance(id: id, context: DataManager.shared.viewContext)
+        controller.object = serviceObject
+        controller.parentGroup = serviceObject?.group
+        navigationController.pushViewController(controller, animated: true)
+
     }
 }
 

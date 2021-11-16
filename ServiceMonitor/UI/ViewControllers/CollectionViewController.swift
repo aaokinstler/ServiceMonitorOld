@@ -10,8 +10,7 @@ import CoreData
 
 class CollectionViewController: UICollectionViewController, UIGestureRecognizerDelegate {
     
-    
-    var dataManager: DataManager!
+
     var parentGroup: Group!
     var fetchedResultController: NSFetchedResultsController<MonitorObject>!
     var datasource: UICollectionViewDiffableDataSource<Int, NSManagedObjectID>!
@@ -34,7 +33,7 @@ class CollectionViewController: UICollectionViewController, UIGestureRecognizerD
         fetchRequest.predicate = predicate
         let sortDescriptor = NSSortDescriptor(key: "name", ascending: true)
         fetchRequest.sortDescriptors = [sortDescriptor]
-        fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: dataManager.dataController.viewContext, sectionNameKeyPath: nil, cacheName: nil)
+        fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: DataManager.shared.viewContext, sectionNameKeyPath: nil, cacheName: nil)
         fetchedResultController.delegate = self
         do {
             try fetchedResultController.performFetch()
@@ -55,8 +54,8 @@ class CollectionViewController: UICollectionViewController, UIGestureRecognizerD
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        dataManager.object = parentGroup
-        dataManager.startAutoupdate()
+        DataManager.shared.object = parentGroup
+        DataManager.shared.startAutoupdate()
         setTitle()
     }
     
@@ -188,7 +187,6 @@ class CollectionViewController: UICollectionViewController, UIGestureRecognizerD
     func pushGroupVC(monitorObject: MonitorObject) {
         let groupObject = monitorObject as! Group
         let controller = self.storyboard?.instantiateViewController(identifier: "GroupNode") as! CollectionViewController
-        controller.dataManager = dataManager
         controller.parentGroup = groupObject
         self.navigationController?.pushViewController(controller, animated: true)
     }
@@ -196,7 +194,6 @@ class CollectionViewController: UICollectionViewController, UIGestureRecognizerD
     func pushServiceVC(monitorObject: MonitorObject!) {
         
         let controller = self.storyboard?.instantiateViewController(identifier: "ServiceVC") as! ServiceViewController
-        controller.dataManager = dataManager
         controller.parentGroup = parentGroup
         if let monitorObject = monitorObject {
             let serviceObject = monitorObject as! Service
@@ -207,7 +204,6 @@ class CollectionViewController: UICollectionViewController, UIGestureRecognizerD
     
     func pushGroupObjectVC(monitorObject: MonitorObject!) {
         let controller = self.storyboard?.instantiateViewController(identifier: "GroupVC") as! GroupViewController
-        controller.dataManager = dataManager
         controller.parentGroup = parentGroup
         if let monitorObject = monitorObject {
             controller.object = monitorObject
@@ -223,9 +219,9 @@ class CollectionViewController: UICollectionViewController, UIGestureRecognizerD
         
         refreshControl.beginRefreshing()
         if let parentGroup = parentGroup {
-            dataManager.updateGroupData(id: Int(parentGroup.monitorId))
+            DataManager.shared.updateGroupData(id: Int(parentGroup.monitorId))
         } else {
-            dataManager.updateMonitorData()
+            DataManager.shared.updateMonitorData()
         }
      }
     

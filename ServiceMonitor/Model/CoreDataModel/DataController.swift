@@ -26,7 +26,8 @@ class DataController {
     func load(completion: (() -> Void)? = nil) {
         persistentContainer.loadPersistentStores { storeDescription, error in
             guard error == nil else {
-                fatalError(error!.localizedDescription)
+                print(error!.localizedDescription)
+                return
             }
             self.configureContexts()
             completion?()

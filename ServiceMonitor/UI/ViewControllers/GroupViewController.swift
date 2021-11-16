@@ -18,7 +18,7 @@ class GroupViewController: MonitorObjectViewController {
     // MARK: Lifecycle methods
     override func viewDidLoad() {
         if object == nil {
-            object = Group.createEntityObject(context: dataManager.dataController.viewContext)
+            object = Group.createEntityObject(context: DataManager.shared.viewContext)
             object.group = parentGroup
         }
         super.viewDidLoad()
@@ -73,8 +73,8 @@ class GroupViewController: MonitorObjectViewController {
                 return
             }
             
-            self.dataManager.viewContext.delete(object)
-            self.dataManager.saveViewContext()
+            DataManager.shared.viewContext.delete(object)
+            DataManager.shared.saveViewContext()
             self.navigationController?.popViewController(animated: true)
         }
     }
@@ -101,7 +101,7 @@ class GroupViewController: MonitorObjectViewController {
         
         let object = object as! Group
         object.monitorId = Int16(id)
-        dataManager.saveViewContext()
+        DataManager.shared.saveViewContext()
         setViewData()
         setSavingActivity(saving: false)
     }
