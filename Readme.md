@@ -17,13 +17,13 @@ Mobile app provides access to the Serice Monitor. In the app, you can create ser
 ### UI Images
 
 Core view controller with groups. Each group have a name, id, number of fine subserices/all subservices.
-![Root view with groups.](/ReadmeAssets/screenshot-1)
+![Root view with groups.](/ReadmeAssets/screenshot-1.png)
 
 Group content. Each service have a name, id, current status, time since last execution/check.
-![Root view with groups.](/ReadmeAssets/screenshot-2)
+![Root view with groups.](/ReadmeAssets/screenshot-2.png)
 
 Service view controller that contains detail information about the service. Here user can change any information, delete service, subscribe to notifications.
-![Root view with groups.](/ReadmeAssets/screenshot-3)
+![Root view with groups.](/ReadmeAssets/screenshot-3.png)
 
 ### Used libraries
 
